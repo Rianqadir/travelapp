@@ -17,7 +17,7 @@ export default function CalculatorPage() {
   const [destination, setDestination] = useState('');
   const [originCoords, setOriginCoords] = useState<[number, number] | undefined>();
   const [destCoords, setDestCoords] = useState<[number, number] | undefined>();
-  const [mileagePref, setMileagePref] = useState<'auto' | 'city' | 'highway'>('auto');
+  const [mileagePref, setMileagePref] = useState<'city' | 'highway'>('city');
   const [result, setResult] = useState<CalcResult | null>(null);
   const [isCalculating, setIsCalculating] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -140,45 +140,37 @@ export default function CalculatorPage() {
                 <div className="p-3 bg-secondary/50 rounded-lg">
                   <label className="block text-sm font-medium mb-3 flex items-center gap-1">
                     <Gauge className="w-4 h-4 text-accent" />
-                    Trip Type / Mileage Mode
+                    Trip Type
                   </label>
-                  <div className="grid grid-cols-3 gap-2">
+                  <div className="grid grid-cols-2 gap-2">
                     <button
-                      onClick={() => setMileagePref('auto')}
-                      className={`py-2 px-1 text-xs rounded-lg border transition-all ${
-                        mileagePref === 'auto'
-                          ? 'bg-accent text-white border-accent shadow-lg glow-accent'
-                          : 'bg-background border-border hover:border-accent/50'
-                      }`}
-                    >
-                      🤖 Auto
-                    </button>
-                    <button
+                      type="button"
                       onClick={() => setMileagePref('city')}
-                      className={`py-2 px-1 text-xs rounded-lg border transition-all ${
+                      className={`py-2.5 px-2 rounded-lg border transition-all flex flex-col items-center gap-1 ${
                         mileagePref === 'city'
                           ? 'bg-blue-600 text-white border-blue-600 shadow-lg'
                           : 'bg-background border-border hover:border-blue-400'
                       }`}
                     >
-                      🏙️ City
+                      <span className="text-sm font-bold">🏙️ City</span>
+                      <span className="text-[10px] opacity-80">{selectedCarObj.city_mileage ?? (selectedCarObj.claimed_mileage * 0.8).toFixed(1)} km/L</span>
                     </button>
                     <button
+                      type="button"
                       onClick={() => setMileagePref('highway')}
-                      className={`py-2 px-1 text-xs rounded-lg border transition-all ${
+                      className={`py-2.5 px-2 rounded-lg border transition-all flex flex-col items-center gap-1 ${
                         mileagePref === 'highway'
                           ? 'bg-green-600 text-white border-green-600 shadow-lg'
                           : 'bg-background border-border hover:border-green-400'
                       }`}
                     >
-                      🛣️ Highway
+                      <span className="text-sm font-bold">🛣️ Highway</span>
+                      <span className="text-[10px] opacity-80">{selectedCarObj.highway_mileage ?? selectedCarObj.claimed_mileage} km/L</span>
                     </button>
                   </div>
                   <p className="text-[10px] text-muted-foreground mt-2 flex items-center gap-1">
                     <Info className="w-3 h-3" />
-                    {mileagePref === 'auto' && 'Smart detection via ORS Route Intelligence'}
-                    {mileagePref === 'city' && `Using City Average: ${selectedCarObj.city_mileage ?? (selectedCarObj.claimed_mileage * 0.8).toFixed(1)} km/L`}
-                    {mileagePref === 'highway' && `Using Highway Average: ${selectedCarObj.highway_mileage ?? selectedCarObj.claimed_mileage} km/L`}
+                    Select based on your destination and traffic conditions
                   </p>
                 </div>
               )}

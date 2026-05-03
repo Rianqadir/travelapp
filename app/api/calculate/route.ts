@@ -56,7 +56,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: err.message }, { status: 422 });
   }
 
-  // Get route from ORS Directions API with road type extras
+  // Get route from ORS Directions API (Basic distance/time only)
   const orsRes = await fetch('https://api.openrouteservice.org/v2/directions/driving-car', {
     method: 'POST',
     headers: {
@@ -64,8 +64,7 @@ export async function POST(req: NextRequest) {
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({ 
-      coordinates: [originCoords, destCoords],
-      extra_info: ["road_type"] 
+      coordinates: [originCoords, destCoords]
     }),
   });
 
@@ -79,19 +78,6 @@ export async function POST(req: NextRequest) {
   const summary = route.summary;
   const distance_km = summary.distance / 1000;
   const travel_time_minutes = summary.duration / 60;
-
-  // Calculate highway vs city percentage from road_type extras
-  // Road types 1 (Motorway) and 2 (Trunk) are considered Highway
-  let highwayDist = 0;
-  if (route.extras?.road_type?.summary) {
-    route.extras.road_type.summary.forEach((item: any) => {
-      if (item.value === 1 || item.value === 2) {
-        highwayDist += item.distance;
-      }
-    });
-  }
-  const highway_pct = distance_km > 0 ? (highwayDist / 1000) / distance_km : 0;
-  const city_pct = 1 - highway_pct;
 
   // Fetch the selected car (must belong to this user)
   const [car] = await db
@@ -111,35 +97,20 @@ export async function POST(req: NextRequest) {
 
   const price_per_liter = fuelPrice?.price_per_liter ?? 0;
 
-  // Determine effective mileage
+  // Determine effective mileage based on manual preference
   let effective_mileage: number;
   let mileage_source: string;
 
   const cityMileage = car.city_mileage ?? car.claimed_mileage * 0.8;
   const highwayMileage = car.highway_mileage ?? car.claimed_mileage;
 
-  if (mileage_preference === 'city') {
-    effective_mileage = cityMileage;
-    mileage_source = 'Forced City';
-  } else if (mileage_preference === 'highway') {
+  if (mileage_preference === 'highway') {
     effective_mileage = highwayMileage;
-    mileage_source = 'Forced Highway';
+    mileage_source = 'Highway Average';
   } else {
-    // 'auto' or 'composite'
-    // If route intelligence found motorway segments, use weighted average
-    if (highway_pct > 0.05) {
-      effective_mileage = (highway_pct * highwayMileage) + (city_pct * cityMileage);
-      mileage_source = `Composite (${Math.round(highway_pct * 100)}% Highway)`;
-    } else {
-      // Fallback to simple threshold if no detailed road data (though ORS usually provides it)
-      if (distance_km > 50) {
-        effective_mileage = highwayMileage;
-        mileage_source = 'Auto Highway (>50km)';
-      } else {
-        effective_mileage = cityMileage;
-        mileage_source = 'Auto City (<50km)';
-      }
-    }
+    // Default to city if 'city' or if 'auto' was somehow passed
+    effective_mileage = cityMileage;
+    mileage_source = 'City Average';
   }
 
   const fuel_required_liters = distance_km / effective_mileage;

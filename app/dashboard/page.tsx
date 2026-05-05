@@ -1,16 +1,46 @@
 'use client';
 
+import { useState, useMemo } from 'react';
 import { AppLayout } from '@/components/app-layout';
 import { Card } from '@/components/ui/card';
 import { useApp } from '@/lib/context';
-import { Fuel, Gauge, MapPin, TrendingUp, Clock } from 'lucide-react';
+import { Fuel, Gauge, MapPin, TrendingUp, Clock, Filter } from 'lucide-react';
+import { subDays, subMonths, startOfMonth, startOfYear, startOfDay, isAfter } from 'date-fns';
 
 export default function DashboardPage() {
   const { cars, trips, fuelPrices, isLoading } = useApp();
 
-  const totalTrips = trips.length;
-  const totalDistance = trips.reduce((sum, t) => sum + t.distance_km, 0);
-  const totalFuelCost = trips.reduce((sum, t) => sum + t.fuel_cost_pkr, 0);
+  const [timeHorizon, setTimeHorizon] = useState('All Time');
+  const [selectedCarId, setSelectedCarId] = useState<number | 'all'>('all');
+
+  const filteredTrips = useMemo(() => {
+    let filtered = trips;
+
+    if (selectedCarId !== 'all') {
+      filtered = filtered.filter(t => t.car_id === selectedCarId);
+    }
+
+    const now = new Date();
+    filtered = filtered.filter(t => {
+      const tripDate = new Date(t.created_at);
+      switch (timeHorizon) {
+        case 'Today': return isAfter(tripDate, startOfDay(now));
+        case 'Last 24 hr': return isAfter(tripDate, subDays(now, 1));
+        case 'This Month': return isAfter(tripDate, startOfMonth(now));
+        case 'Last 30 days': return isAfter(tripDate, subDays(now, 30));
+        case 'Last 6 months': return isAfter(tripDate, subMonths(now, 6));
+        case 'This Year': return isAfter(tripDate, startOfYear(now));
+        case 'Last 12 months': return isAfter(tripDate, subMonths(now, 12));
+        default: return true;
+      }
+    });
+
+    return filtered;
+  }, [trips, timeHorizon, selectedCarId]);
+
+  const totalTrips = filteredTrips.length;
+  const totalDistance = filteredTrips.reduce((sum, t) => sum + t.distance_km, 0);
+  const totalFuelCost = filteredTrips.reduce((sum, t) => sum + t.fuel_cost_pkr, 0);
 
   const stats = [
     { label: 'Total Trips', value: isLoading ? '—' : totalTrips, icon: MapPin, color: 'bg-blue-500/10 text-blue-600' },
@@ -28,9 +58,45 @@ export default function DashboardPage() {
   return (
     <AppLayout>
       <div className="p-6 md:p-8">
-        <h1 className="text-4xl font-bold mb-8 text-foreground">
-          Dashboard<span className="text-accent">.</span>
-        </h1>
+        <div className="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4">
+          <h1 className="text-4xl font-bold text-foreground">
+            Dashboard<span className="text-accent">.</span>
+          </h1>
+
+          <div className="flex flex-col sm:flex-row gap-3">
+            <div className="flex items-center gap-2 bg-card border border-border p-1 rounded-lg shadow-sm">
+              <Filter className="w-4 h-4 ml-2 text-muted-foreground" />
+              <select
+                value={timeHorizon}
+                onChange={(e) => setTimeHorizon(e.target.value)}
+                className="bg-transparent text-sm p-2 outline-none border-none text-foreground font-medium cursor-pointer"
+              >
+                <option value="All Time">All Time</option>
+                <option value="Today">Today</option>
+                <option value="Last 24 hr">Last 24 hr</option>
+                <option value="This Month">This Month (so far)</option>
+                <option value="Last 30 days">Last 30 days</option>
+                <option value="Last 6 months">Last 6 months</option>
+                <option value="This Year">This Year (so far)</option>
+                <option value="Last 12 months">Last 12 months</option>
+              </select>
+            </div>
+
+            <div className="flex items-center gap-2 bg-card border border-border p-1 rounded-lg shadow-sm">
+              <Gauge className="w-4 h-4 ml-2 text-muted-foreground" />
+              <select
+                value={selectedCarId}
+                onChange={(e) => setSelectedCarId(e.target.value === 'all' ? 'all' : Number(e.target.value))}
+                className="bg-transparent text-sm p-2 outline-none border-none text-foreground font-medium cursor-pointer max-w-[150px] truncate"
+              >
+                <option value="all">All Cars</option>
+                {cars.map(car => (
+                  <option key={car.id} value={car.id}>{car.name}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+        </div>
 
         {/* Stats Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
@@ -86,11 +152,11 @@ export default function DashboardPage() {
         </Card>
 
         {/* Recent Trips */}
-        {trips.length > 0 && (
+        {filteredTrips.length > 0 && (
           <Card className="p-6 gradient-card">
-            <h2 className="text-xl font-bold mb-6">Recent Trips<span className="text-accent">.</span></h2>
+            <h2 className="text-xl font-bold mb-6">Filtered Trips<span className="text-accent">.</span></h2>
             <div className="space-y-3">
-              {trips.slice(0, 5).map(trip => {
+              {filteredTrips.slice(0, 5).map(trip => {
                 const car = cars.find(c => c.id === trip.car_id);
                 return (
                   <div key={trip.id} className="flex items-center justify-between py-3 border-b border-border last:border-0">

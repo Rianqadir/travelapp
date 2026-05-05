@@ -5,7 +5,7 @@ import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useApp } from '@/lib/context';
 import { useState, useMemo } from 'react';
-import { AlertCircle, MapPin, Clock, Fuel, Navigation, Gauge, Info } from 'lucide-react';
+import { AlertCircle, MapPin, Clock, Fuel, Navigation, Gauge, Info, History } from 'lucide-react';
 import { LocationInput } from '@/components/location-input';
 import { RouteMap } from '@/components/route-map';
 import type { CalcResult } from '@/lib/types';
@@ -23,6 +23,15 @@ export default function CalculatorPage() {
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState('');
   const [saved, setSaved] = useState(false);
+
+  const uniqueLocations = useMemo(() => {
+    const locs = new Set<string>();
+    trips.forEach(t => {
+      if (t.origin) locs.add(t.origin);
+      if (t.destination) locs.add(t.destination);
+    });
+    return Array.from(locs).slice(0, 8);
+  }, [trips]);
 
   const fuelLabel: Record<string, string> = {
     petrol: 'Petrol — Euro5 Premier',
@@ -172,6 +181,36 @@ export default function CalculatorPage() {
                     <Info className="w-3 h-3" />
                     Select based on your destination and traffic conditions
                   </p>
+                </div>
+              )}
+
+              {/* Recent / Saved Locations */}
+              {uniqueLocations.length > 0 && (
+                <div className="p-3 bg-secondary/30 rounded-lg">
+                  <p className="text-xs font-medium text-muted-foreground mb-2 flex items-center gap-1">
+                    <History className="w-3 h-3" /> Recent Locations
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    {uniqueLocations.map(loc => (
+                      <div key={loc} className="flex border border-border rounded-md overflow-hidden text-xs bg-background shadow-sm">
+                        <span className="px-2 py-1.5 text-foreground truncate max-w-[120px]" title={loc}>{loc}</span>
+                        <button 
+                          onClick={() => { setOrigin(loc); setOriginCoords(undefined); }} 
+                          className="px-2 py-1.5 bg-secondary hover:bg-accent hover:text-white transition-colors border-l border-border font-medium" 
+                          title="Set as Origin"
+                        >
+                          Orig
+                        </button>
+                        <button 
+                          onClick={() => { setDestination(loc); setDestCoords(undefined); }} 
+                          className="px-2 py-1.5 bg-secondary hover:bg-accent hover:text-white transition-colors border-l border-border font-medium" 
+                          title="Set as Destination"
+                        >
+                          Dest
+                        </button>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               )}
 

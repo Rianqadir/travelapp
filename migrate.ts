@@ -7,11 +7,9 @@ const sql = neon(DATABASE_URL);
 
 async function migrate() {
   console.log('Migrating DB...');
-  await sql(`
-    ALTER TABLE cars ADD COLUMN IF NOT EXISTS city_mileage REAL;
-    ALTER TABLE cars ADD COLUMN IF NOT EXISTS highway_mileage REAL;
-    ALTER TABLE cars DROP COLUMN IF EXISTS custom_mileage;
-  `);
+  await sql.query('ALTER TABLE cars ADD COLUMN IF NOT EXISTS city_mileage REAL');
+  await sql.query('ALTER TABLE cars ADD COLUMN IF NOT EXISTS highway_mileage REAL');
+  await sql.query('ALTER TABLE cars DROP COLUMN IF EXISTS custom_mileage');
   console.log('Migration complete.');
 }
 

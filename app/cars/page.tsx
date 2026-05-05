@@ -56,7 +56,7 @@ const PRESET_MODELS = [
   { name: 'Hyundai Tucson', mileage: 11, fuel: 'petrol' },
   { name: 'Hyundai Elantra', mileage: 12, fuel: 'petrol' },
   { name: 'Hyundai Sonata', mileage: 11, fuel: 'petrol' },
-  { name: 'Hyundai Santa Fe', mileage: 9, fuel: 'petrol' },
+  { name: 'Hyundai Santa Fe', mileage: 15, fuel: 'high_octane' },
   { name: 'Hyundai Staria', mileage: 10, fuel: 'diesel' },
   // Kia
   { name: 'Kia Sportage', mileage: 11, fuel: 'petrol' },

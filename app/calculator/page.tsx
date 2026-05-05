@@ -11,7 +11,7 @@ import { RouteMap } from '@/components/route-map';
 import type { CalcResult } from '@/lib/types';
 
 export default function CalculatorPage() {
-  const { cars, saveTrip } = useApp();
+  const { cars, trips, saveTrip } = useApp();
   const [selectedCar, setSelectedCar] = useState<string>('');
   const [origin, setOrigin] = useState('');
   const [destination, setDestination] = useState('');
